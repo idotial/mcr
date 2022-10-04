@@ -1,0 +1,26 @@
+---
+compiled_package_info:
+  package_name: mcr
+  address_alias_instantiation:
+    Extensions: "0000000000000000000000000000000000000000000000000000000000000001"
+    aptos_framework: "0000000000000000000000000000000000000000000000000000000000000001"
+    aptos_std: "0000000000000000000000000000000000000000000000000000000000000001"
+    core_resources: 000000000000000000000000000000000000000000000000000000000a550c18
+    mcr: 56e4f1601ebf887dd608c7476ccf6cb2b581aef116891624f29945f1187f360d
+    std: "0000000000000000000000000000000000000000000000000000000000000001"
+    vm_reserved: "0000000000000000000000000000000000000000000000000000000000000000"
+  source_digest: 08A734AEAAD3F290E0714AA033675BEC2B6084B0FE5B4D2ADD6C13EE926A9B7B
+  build_flags:
+    dev_mode: false
+    test_mode: false
+    generate_docs: false
+    generate_abis: false
+    install_dir: ~
+    force_recompilation: false
+    additional_named_addresses: {}
+    architecture: ~
+    fetch_deps_only: false
+dependencies:
+  - AptosFramework
+  - AptosStdlib
+  - MoveStdlib
