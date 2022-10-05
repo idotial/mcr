@@ -6,6 +6,7 @@ module mcr::launchpad {
     use aptos_framework::coin::{Coin, zero};
     use aptos_framework::aptos_coin::AptosCoin;
     use aptos_std::event::{Self, EventHandle};
+    use aptos_std::type_info;
 
     /// Account hasn't registered `CoinStore` for `CoinType`
     const ELAUNCHPAD_STORE_ALREADY_PUBLISHED: u64 = 6;
@@ -52,7 +53,8 @@ module mcr::launchpad {
             error::not_found(ELAUNCHPAD_ALREADY_PUBLISHED),
         );
 
-        let launchpad_store = borrow_global_mut<LaunchpadStore>(account_addr);
+        let type_info = type_info::type_of<LaunchpadStore>();
+        let launchpad_store = borrow_global_mut<LaunchpadStore>(type_info::account_address(&type_info));
 
         event::emit_event<CreateEvent>(
             &mut launchpad_store.create_events,
