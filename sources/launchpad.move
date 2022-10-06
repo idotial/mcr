@@ -3,7 +3,7 @@ module mcr::launchpad {
     use std::error;
 
     use aptos_framework::account;
-    use aptos_framework::coin::{Coin, zero};
+    use aptos_framework::coin::{Self, Coin, zero};
     use aptos_framework::aptos_coin::AptosCoin;
     use aptos_std::event::{Self, EventHandle};
     use aptos_std::type_info;
@@ -45,7 +45,7 @@ module mcr::launchpad {
                 });
     }
 
-    public entry fun create<CoinType>(account: &signer, coin: Coin<CoinType>, soft_cap: u64, hard_cap:u64, start_timestamp_secs: u64, end_timestamp_secs: u64)
+    public entry fun create<CoinType>(account: &signer, amount: u64, soft_cap: u64, hard_cap:u64, start_timestamp_secs: u64, end_timestamp_secs: u64)
     acquires LaunchpadStore {
         let account_addr = signer::address_of(account);
         assert!(
@@ -60,6 +60,8 @@ module mcr::launchpad {
             &mut launchpad_store.create_events,
             CreateEvent { addr: account_addr },
         );
+
+        let coin = coin::withdraw<CoinType>(account, amount);
 
         move_to(account, Launchpad<CoinType>{
                     coin,
