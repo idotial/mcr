@@ -151,7 +151,7 @@ module mcr::launchpad {
 
     }
 
-    public entry fun settle<CoinType>(account: &signer, owner: address) acquires Launchpad, Buy {
+    public entry fun claim<CoinType>(account: &signer, owner: address) acquires Launchpad, Buy {
         assert!(
             !exists<Launchpad<CoinType>>(owner),
             error::not_found(ELAUNCHPAD_NOT_PUBLISHED),
