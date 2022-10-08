@@ -4,7 +4,8 @@ version = "0.0.0"
 license = "Apache 2.0"
 
 [addresses]
-mcr = "_"
+mcr = "0x2"
+std = "0x1"
 
 [dependencies.AptosFramework]
 git = 'https://github.com/aptos-labs/aptos-core.git'
