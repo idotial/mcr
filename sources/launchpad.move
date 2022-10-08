@@ -5,8 +5,12 @@ module mcr::launchpad {
     use aptos_framework::account;
     use aptos_framework::coin::{Self, Coin, zero};
     use aptos_framework::aptos_coin::AptosCoin;
+    use aptos_framework::timestamp;
     use aptos_std::event::{Self, EventHandle};
     use aptos_std::type_info;
+
+    const ELAUNCHPAD_NOT_JOIN: u64 = 3;
+    const EBUYED: u64 = 4;
 
     /// Account hasn't registered `CoinStore` for `CoinType`
     const ELAUNCHPAD_STORE_ALREADY_PUBLISHED: u64 = 6;
@@ -16,6 +20,9 @@ module mcr::launchpad {
 
     /// Account hasn't registered `CoinStore` for `CoinType`
     const ELAUNCHPAD_ALREADY_PUBLISHED: u64 = 6;
+
+    const ELAUNCHPAD_NOT_START: u64 = 7;
+    const ELAUNCHPAD_ALREADY_END: u64 = 8;
 
     // Resource representing a shared account   
     struct StoreAccount has key {
@@ -37,6 +44,7 @@ module mcr::launchpad {
     struct Launchpad<phantom CoinType> has key {
         coin: Coin<CoinType>,
         raised_aptos: Coin<AptosCoin>,
+        raised_amount: u64,
         soft_cap: u64,
         hard_cap: u64,
         start_timestamp_secs: u64,
@@ -102,6 +110,7 @@ module mcr::launchpad {
         move_to(account, Launchpad<CoinType>{
                     coin,
                     raised_aptos: zero<AptosCoin>(),
+                    raised_amount: 0,
                     soft_cap,
                     hard_cap,
                     start_timestamp_secs,
@@ -114,7 +123,23 @@ module mcr::launchpad {
             !exists<Launchpad<CoinType>>(owner),
             error::not_found(ELAUNCHPAD_NOT_PUBLISHED),
         );
+        let account_addr = signer::address_of(account);
+        assert!(
+            exists<Buy<CoinType>>(account_addr),
+            error::not_found(EBUYED),
+        );
         let launchpad = borrow_global_mut<Launchpad<CoinType>>(owner);
+
+        assert!(
+            launchpad.start_timestamp_secs > timestamp::now_seconds(),
+            error::not_found(ELAUNCHPAD_NOT_START),
+        );
+        assert!(
+            launchpad.end_timestamp_secs < timestamp::now_seconds(),
+            error::not_found(ELAUNCHPAD_ALREADY_END),
+        );
+
+        launchpad.raised_amount = launchpad.raised_amount + amount;
 
         let deposit_coin = coin::withdraw<AptosCoin>(account, amount);
         coin::merge(&mut launchpad.raised_aptos, deposit_coin);
@@ -123,6 +148,27 @@ module mcr::launchpad {
                     launchpad_owner: owner,
                     amount,
                 });
+
+    }
+
+    public entry fun settle<CoinType>(account: &signer, owner: address) acquires Launchpad, Buy {
+        assert!(
+            !exists<Launchpad<CoinType>>(owner),
+            error::not_found(ELAUNCHPAD_NOT_PUBLISHED),
+        );
+        let account_addr = signer::address_of(account);
+        assert!(
+            !exists<Buy<CoinType>>(account_addr),
+            error::not_found(ELAUNCHPAD_NOT_JOIN),
+        );
+        let launchpad = borrow_global_mut<Launchpad<CoinType>>(owner);
+
+        let ticket = borrow_global_mut<Buy<CoinType>>(account_addr);
+
+        if (launchpad.raised_amount > launchpad.soft_cap) {
+            let claiming = coin::extract(&mut launchpad.coin, 100); //change the value of claiming token
+            coin::deposit(account_addr, claiming);
+        }
 
     }
 
