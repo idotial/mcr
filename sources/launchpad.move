@@ -12,17 +12,12 @@ module mcr::launchpad {
     const ELAUNCHPAD_NOT_JOIN: u64 = 3;
     const EBUYED: u64 = 4;
 
-    /// Account hasn't registered `CoinStore` for `CoinType`
-    const ELAUNCHPAD_STORE_ALREADY_PUBLISHED: u64 = 6;
-
-    /// Account hasn't registered `CoinStore` for `CoinType`
-    const ELAUNCHPAD_NOT_PUBLISHED: u64 = 5;
-
-    /// Account hasn't registered `CoinStore` for `CoinType`
-    const ELAUNCHPAD_ALREADY_PUBLISHED: u64 = 6;
-
-    const ELAUNCHPAD_NOT_START: u64 = 7;
-    const ELAUNCHPAD_ALREADY_END: u64 = 8;
+    const ELAUNCHPAD_STORE_ALREADY_PUBLISHED: u64 = 5;
+    const ELAUNCHPAD_NOT_PUBLISHED: u64 = 6;
+    const ELAUNCHPAD_ALREADY_PUBLISHED: u64 = 7;
+    const ELAUNCHPAD_NOT_START: u64 = 8;
+    const ELAUNCHPAD_ALREADY_END: u64 = 9;
+    const ELAUNCHPAD_NOT_END: u64 = 10;
 
     // Resource representing a shared account   
     struct StoreAccount has key {
@@ -51,12 +46,12 @@ module mcr::launchpad {
         end_timestamp_secs: u64,
     }
 
-    struct Buy<phantom CoinType> has key {
+    struct Buy<phantom CoinType> has key, drop {
         launchpad_owner: address,
         amount: u64,
     }
 
-    fun init_store_account(account: &signer) {
+    public entry fun init(account: &signer) {
         let account_addr = signer::address_of(account);
         let type_info = type_info::type_of<StoreAccount>();
         assert!(account_addr == type_info::account_address(&type_info), 0);
@@ -88,7 +83,7 @@ module mcr::launchpad {
         let account_addr = signer::address_of(account);
         assert!(
             !is_registered<CoinType>(account_addr),
-            error::not_found(ELAUNCHPAD_ALREADY_PUBLISHED),
+            error::invalid_state(ELAUNCHPAD_ALREADY_PUBLISHED),
         );
 
         let type_info = type_info::type_of<StoreAccount>();
@@ -132,11 +127,11 @@ module mcr::launchpad {
 
         assert!(
             launchpad.start_timestamp_secs > timestamp::now_seconds(),
-            error::not_found(ELAUNCHPAD_NOT_START),
+            error::invalid_state(ELAUNCHPAD_NOT_START),
         );
         assert!(
             launchpad.end_timestamp_secs < timestamp::now_seconds(),
-            error::not_found(ELAUNCHPAD_ALREADY_END),
+            error::invalid_state(ELAUNCHPAD_ALREADY_END),
         );
 
         launchpad.raised_amount = launchpad.raised_amount + amount;
@@ -161,15 +156,45 @@ module mcr::launchpad {
             !exists<Buy<CoinType>>(account_addr),
             error::not_found(ELAUNCHPAD_NOT_JOIN),
         );
+        
         let launchpad = borrow_global_mut<Launchpad<CoinType>>(owner);
+        assert!(
+            launchpad.end_timestamp_secs < timestamp::now_seconds(),
+            error::invalid_state(ELAUNCHPAD_NOT_END),
+        );
 
         let ticket = borrow_global_mut<Buy<CoinType>>(account_addr);
 
         if (launchpad.raised_amount > launchpad.soft_cap) {
             let claiming = coin::extract(&mut launchpad.coin, 100); //change the value of claiming token
             coin::deposit(account_addr, claiming);
+             let Buy {launchpad_owner: _launchpad_owner, amount: _amount} = ticket;
+        } else {
+            let claiming = coin::extract(&mut launchpad.raised_aptos, ticket.amount); //change the value of claiming token
+            coin::deposit(account_addr, claiming);
+             let Buy {launchpad_owner: _launchpad_owner, amount: _amount} = ticket;
         }
+    }
 
+    public entry fun settle<CoinType>(account: &signer) acquires Launchpad {
+        let account_addr = signer::address_of(account);
+        assert!(
+            !exists<Launchpad<CoinType>>(account_addr),
+            error::not_found(ELAUNCHPAD_NOT_PUBLISHED),
+        );
+        let launchpad = borrow_global_mut<Launchpad<CoinType>>(account_addr);
+        assert!(
+            launchpad.end_timestamp_secs < timestamp::now_seconds(),
+            error::invalid_state(ELAUNCHPAD_NOT_END),
+        );
+
+        if (launchpad.raised_amount > launchpad.soft_cap) {
+            let claiming = coin::extract_all(&mut launchpad.raised_aptos); //change the value of claiming token
+            coin::deposit(account_addr, claiming);
+        } else {
+            let claiming = coin::extract_all(&mut launchpad.coin); //change the value of claiming token
+            coin::deposit(account_addr, claiming);
+        }
     }
 
     public fun is_registered<CoinType>(owner: address): bool {
