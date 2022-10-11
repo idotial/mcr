@@ -221,5 +221,4 @@ module mcr::launchpad {
     public entry fun get_launchpad<CoinType>(addr: address): u64 acquires Launchpad {
         borrow_global<Launchpad<CoinType>>(addr).hard_cap
     }
-
 }
