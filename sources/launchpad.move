@@ -18,6 +18,7 @@ module mcr::launchpad {
     const ELAUNCHPAD_NOT_START: u64 = 8;
     const ELAUNCHPAD_ALREADY_END: u64 = 9;
     const ELAUNCHPAD_NOT_END: u64 = 10;
+    const EBUY_AMOUNT_TOO_SMALL: u64 = 11;
 
     // Resource representing a shared account   
     struct StoreAccount has key {
@@ -44,6 +45,11 @@ module mcr::launchpad {
         hard_cap: u64,
         start_timestamp_secs: u64,
         end_timestamp_secs: u64,
+        
+        usr_minum_amount: u64
+        usr_hard_cap: u64
+        token_sell_rate: u64
+        fee_type: u8 //使用launchpad提取的手续费的方式,0代表抽取一定比例的aptos,1代表抽取一定比例的sell代币，2代表各抽取一半
     }
 
     struct Buy<phantom CoinType> has key, drop {
@@ -78,7 +84,7 @@ module mcr::launchpad {
         }
     }
 
-    public entry fun create<CoinType>(account: &signer, amount: u64, soft_cap: u64, hard_cap:u64, start_timestamp_secs: u64, end_timestamp_secs: u64)
+    public entry fun create<CoinType>(account: &signer, amount: u64, soft_cap: u64, hard_cap:u64, start_timestamp_secs: u64, end_timestamp_secs: u64,usr_minum_amount: u64,usr_hard_cap: u64,token_sell_rate: u64,fee_type: u8 )
     acquires LaunchpadStore, StoreAccount, StoreAccountEvent {
         let account_addr = signer::address_of(account);
         assert!(
@@ -109,7 +115,11 @@ module mcr::launchpad {
                     soft_cap,
                     hard_cap,
                     start_timestamp_secs,
-                    end_timestamp_secs
+                    end_timestamp_secs,
+                    usr_minum_amount,
+                    usr_hard_cap,
+                    token_sell_rate,
+                    fee_type
                 });
     }
 
@@ -134,14 +144,21 @@ module mcr::launchpad {
             error::invalid_state(ELAUNCHPAD_ALREADY_END),
         );
 
-        launchpad.raised_amount = launchpad.raised_amount + amount;
+        //usr hard cap check
+        assert!(amount<launchpad.usr_minum_amount,error::invalid_state(EBUY_AMOUNT_TOO_SMALL));
+        let actual_amount:u64 = amount
+        if amount > launchpad.usr_hard_cap {
+            actual_amount = launchpad.usr_hard_cap
+        }
 
-        let deposit_coin = coin::withdraw<AptosCoin>(account, amount);
+        launchpad.raised_amount = launchpad.raised_amount + actual_amount;
+
+        let deposit_coin = coin::withdraw<AptosCoin>(account, actual_amount);
         coin::merge(&mut launchpad.raised_aptos, deposit_coin);
 
         move_to(account, Buy<CoinType>{
                     launchpad_owner: owner,
-                    amount,
+                    actual_amount,
                 });
 
     }
