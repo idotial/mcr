@@ -182,10 +182,25 @@ module mcr::launchpad {
 
         let ticket = borrow_global_mut<Buy<CoinType>>(account_addr);
 
-        if (launchpad.raised_amount > launchpad.soft_cap) {
-            let claiming = coin::extract(&mut launchpad.coin, 100); //change the value of claiming token
+        if (launchpad.raised_amount > launchpad.soft_cap && launchpad.raised_amount <= launchpad.hard_cap) {
+            //calculate token amount claimed when not excess funds 
+            let claimed_amount:u64 = ticket.amount*launchpad.token_sell_rate;
+            let claiming = coin::extract(&mut launchpad.coin, claimed_amount); //change the value of claiming token
             coin::deposit(account_addr, claiming);
-             let Buy {launchpad_owner: _launchpad_owner, amount: _amount} = ticket;
+            let Buy {launchpad_owner: _launchpad_owner, amount: _amount} = ticket;
+        } else if(launchpad.raised_amount>launchpad.hard_cap){
+            //calculate token amount claimed when  excess funds
+            //according to the proportation
+            let actual_used = ticket.amount*launchpad.hard_cap/launchpad.raised_amount ;
+            let claimed_amount:u64 = actual_used*launchpad.token_sell_rate; 
+            let refund_amount = ticket.amount-actual_used;
+            //claim
+            let claiming = coin::extract(&mut launchpad.coin, claimed_amount); //change the value of claiming token
+            coin::deposit(account_addr, claiming);
+            //refund
+            let refund =coin::extract(&mut launchpad.raised_aptos,refund_amount);  
+            coin::deposit(account_addr, refund); 
+            let Buy {launchpad_owner: _launchpad_owner, amount: _amount} = ticket;
         } else {
             let claiming = coin::extract(&mut launchpad.raised_aptos, ticket.amount); //change the value of claiming token
             coin::deposit(account_addr, claiming);
