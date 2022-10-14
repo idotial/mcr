@@ -220,8 +220,11 @@ module mcr::launchpad {
             error::invalid_state(ELAUNCHPAD_NOT_END),
         );
 
-        if (launchpad.raised_amount > launchpad.soft_cap) {
-            let claiming = coin::extract_all(&mut launchpad.raised_aptos); //change the value of claiming token
+        if (launchpad.raised_amount > launchpad.soft_cap && launchpad.raised_amount <= launchpad.hard_cap) {
+            let claiming = coin::extract_all(&mut launchpad.raised_aptos); //extract all aptos token
+            coin::deposit(account_addr, claiming);
+        } else if(launchpad.raised_amount>launchpad.hard_cap){
+            let claiming = coin::extract(&mut launchpad.raised_aptos,launchpad.hard_cap); //extract hard_cap aptos token
             coin::deposit(account_addr, claiming);
         } else {
             let claiming = coin::extract_all(&mut launchpad.coin); //change the value of claiming token
