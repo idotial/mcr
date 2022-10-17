@@ -165,12 +165,12 @@ module mcr::launchpad {
 
     public entry fun claim<CoinType>(account: &signer, owner: address) acquires Launchpad, Buy {
         assert!(
-            !exists<Launchpad<CoinType>>(owner),
+            exists<Launchpad<CoinType>>(owner),
             error::not_found(ELAUNCHPAD_NOT_PUBLISHED),
         );
         let account_addr = signer::address_of(account);
         assert!(
-            !exists<Buy<CoinType>>(account_addr),
+            exists<Buy<CoinType>>(account_addr),
             error::not_found(ELAUNCHPAD_NOT_JOIN),
         );
         
@@ -204,8 +204,9 @@ module mcr::launchpad {
         } else {
             let claiming = coin::extract(&mut launchpad.raised_aptos, ticket.amount); //change the value of claiming token
             coin::deposit(account_addr, claiming);
-             let Buy {launchpad_owner: _launchpad_owner, amount: _amount} = ticket;
-        }
+            let Buy {launchpad_owner: _launchpad_owner, amount: _amount} = ticket;
+        };
+        move_from<Buy<CoinType>>(account_addr);
     }
 
     public entry fun settle<CoinType>(account: &signer) acquires Launchpad {
