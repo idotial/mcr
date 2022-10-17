@@ -46,8 +46,16 @@ aptos move run --function-id 0x691f13ebc3ea909654b8b364fefecd0e7b60e0e6fc5f98d87
 
 ## 3. Create launchpad
 ```bash
-aptos move run --function-id 0x691f13ebc3ea909654b8b364fefecd0e7b60e0e6fc5f98d870a1912aa673642d::launchpad::create --type-args 0x691f13ebc3ea909654b8b364fefecd0e7b60e0e6fc5f98d870a1912aa673642d::moon_coin::MoonCoin --args u64:1000 u64:200 u64:500 u64:1665473530 u64:1665483530 u64:1 u64:1000 u64:1 u8:1 --profile alice
+aptos move run --function-id 0x691f13ebc3ea909654b8b364fefecd0e7b60e0e6fc5f98d870a1912aa673642d::launchpad::create --type-args 0x691f13ebc3ea909654b8b364fefecd0e7b60e0e6fc5f98d870a1912aa673642d::moon_coin::MoonCoin --args u64:1000 u64:200 u64:500 u64:1665473530 u64:1665483530 u64:1 u64:1000 u64:1 u8:1 --profile alice #请注意修改这里的起、开始和结束的时间戳
 ```
 
+## 4. Buy coin
+```bash
+## create a profile for bob, 得到地址0x9c329fda104a2a0bcfac8603c458ebde00faed4307cc1bfd388f202cef3a0034
+aptos init --profile bob
+aptos account fund-with-faucet --account 0x9c329fda104a2a0bcfac8603c458ebde00faed4307cc1bfd388f202cef3a0034 --amount 10000000000000000000
 
+## 调用buy方法
+aptos move run --function-id  0x691f13ebc3ea909654b8b364fefecd0e7b60e0e6fc5f98d870a1912aa673642d::launchpad::buy --type-args 0x691f13ebc3ea909654b8b364fefecd0e7b60e0e6fc5f98d870a1912aa673642d::moon_coin::MoonCoin --args address:0x691f13ebc3ea909654b8b364fefecd0e7b60e0e6fc5f98d870a1912aa673642d u64:1000 --profile bob
+```
 

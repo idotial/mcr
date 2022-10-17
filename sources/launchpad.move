@@ -125,27 +125,27 @@ module mcr::launchpad {
 
     public entry fun buy<CoinType>(account: &signer, owner: address, amount: u64) acquires Launchpad {
         assert!(
-            !exists<Launchpad<CoinType>>(owner),
+            exists<Launchpad<CoinType>>(owner),
             error::not_found(ELAUNCHPAD_NOT_PUBLISHED),
         );
         let account_addr = signer::address_of(account);
         assert!(
-            exists<Buy<CoinType>>(account_addr),
+            !exists<Buy<CoinType>>(account_addr),
             error::not_found(EBUYED),
         );
         let launchpad = borrow_global_mut<Launchpad<CoinType>>(owner);
 
         assert!(
-            launchpad.start_timestamp_secs > timestamp::now_seconds(),
+            launchpad.start_timestamp_secs < timestamp::now_seconds(),
             error::invalid_state(ELAUNCHPAD_NOT_START),
         );
         assert!(
-            launchpad.end_timestamp_secs < timestamp::now_seconds(),
+            launchpad.end_timestamp_secs > timestamp::now_seconds(),
             error::invalid_state(ELAUNCHPAD_ALREADY_END),
         );
 
         //usr hard cap check
-        assert!(amount < launchpad.usr_minum_amount,error::invalid_state(EBUY_AMOUNT_TOO_SMALL));
+        assert!(amount >= launchpad.usr_minum_amount,error::invalid_state(EBUY_AMOUNT_TOO_SMALL));
         let actual_amount:u64 = amount;
         if (amount > launchpad.usr_hard_cap) {
             actual_amount = launchpad.usr_hard_cap;
