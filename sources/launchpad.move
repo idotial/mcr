@@ -180,7 +180,7 @@ module mcr::launchpad {
             error::invalid_state(ELAUNCHPAD_NOT_END),
         );
 
-        let ticket = borrow_global_mut<Buy<CoinType>>(account_addr);
+        let ticket = move_from<Buy<CoinType>>(account_addr);
 
         if (launchpad.raised_amount > launchpad.soft_cap && launchpad.raised_amount <= launchpad.hard_cap) {
             //calculate token amount claimed when not excess funds 
@@ -206,7 +206,7 @@ module mcr::launchpad {
             coin::deposit(account_addr, claiming);
             let Buy {launchpad_owner: _launchpad_owner, amount: _amount} = ticket;
         };
-        move_from<Buy<CoinType>>(account_addr);
+        
     }
 
     public entry fun settle<CoinType>(account: &signer) acquires Launchpad {
