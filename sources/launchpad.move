@@ -229,7 +229,7 @@ module mcr::launchpad {
     public entry fun settle<CoinType>(account: &signer) acquires Launchpad {
         let account_addr = signer::address_of(account);
         assert!(
-            !exists<Launchpad<CoinType>>(account_addr),
+            exists<Launchpad<CoinType>>(account_addr),
             error::not_found(ELAUNCHPAD_NOT_PUBLISHED),
         );
         let launchpad = borrow_global_mut<Launchpad<CoinType>>(account_addr);
