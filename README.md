@@ -9,19 +9,34 @@ FairLaunch is a decentralized launchpad that allows users to launch their own to
 ## Structure
 
 ├── LICENSE
+
 ├── Move.toml
+
 ├── README.md
+
 ├── call_contract   //js script for setup launchpad
+
 │   ├── common.ts
+
 │   ├── output.key
+
 │   ├── output.key.pub
+
 │   ├── package.json
+
 │   ├── sun_coin.move
+
 │   ├── tsconfig.json
+
 │   ├── yarn.lock
+
 │   └── your_coin.ts
-├── senario.md  //sample cmd script for comunicate with luanchpad module
+
+├── senario.md  //sample cmd script for comunicate with 
+luanchpad module
+
 ├── sources
+
 │   └── launchpad.move
 └── tests
     └── launchpad_test.move
