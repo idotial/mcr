@@ -86,7 +86,7 @@ module mcr::launchpad {
     }
 
     /**
-    * 函数描述
+    * function discription
     *
     * @param account: lauchpad creator
     * @param amount: ido token amount, will distribute to paticipants
@@ -98,8 +98,6 @@ module mcr::launchpad {
     * @param usr_hard_cap: maximum aptos accepted in this launchpad for a user
     * @param token_sell_rate: launchpad price
     * @param fee_type: fee type
-    * @param {number=} p3 参数3的说明（可选）
-    * @return {Object} 返回值描述
     */
     public entry fun create<CoinType>(account: &signer, amount: u64, soft_cap: u64, hard_cap:u64, start_timestamp_secs: u64, end_timestamp_secs: u64,usr_minum_amount: u64,usr_hard_cap: u64,token_sell_rate: u64,fee_type: u8 )
     acquires LaunchpadStore, StoreAccount, StoreAccountEvent {
