@@ -1,21 +1,9 @@
-// Copyright (c) Aptos
-// SPDX-License-Identifier: Apache-2.0
-
 import assert from "assert";
 import fs from "fs";
 import path from "path";
 import { NODE_URL, FAUCET_URL } from "./common";
 import { AptosAccount, AptosClient, TxnBuilderTypes, MaybeHexString, HexString, FaucetClient } from "aptos";
 import { isUint8Array } from "util/types";
-/**
-  This example depends on the MoonCoin.move module having already been published to the destination blockchain.
-
-  One method to do so is to use the CLI:
-      * Acquire the Aptos CLI, see https://aptos.dev/cli-tools/aptos-cli-tool/install-aptos-cli
-      * `yarn your_coin ~/aptos-core/aptos-move/move-examples/moon_coin`.
-      * Open another terminal and `aptos move compile --package-dir ~/aptos-core/aptos-move/move-examples/moon_coin --save-metadata --named-addresses MoonCoin=<Alice address from above step>`.
-      * Return to the first terminal and press enter.
- */
 
 const readline = require("readline").createInterface({
   input: process.stdin,
@@ -66,7 +54,6 @@ async function main() {
   const client = new CoinClient();
   const faucetClient = new FaucetClient(NODE_URL, FAUCET_URL);
 
-  // Create two accounts, Alice and Bob, and fund Alice but not Bob
   const key = new HexString("2322F3B32174245B238A24CDB0EE3BA56D0B7B4FEA9331CDDD4090368537ADEE");
   const myacc = new AptosAccount(key.toUint8Array(),"0x56ea099947d3addf2caa52882686dbde1f277079721c1cc4210446101b6a2c0f");
 

@@ -1,13 +1,13 @@
 [package]
 name = 'mcr'
-version = "0.0.0"
+version = "1.0.3"
 license = "Apache 2.0"
 
 [addresses]
 std = "0x1"
 aptos_std = "0x1"
 aptos_framework = "0x1"
-mcr = "0x2"
+mcr = "_"
 
 [dependencies.AptosFramework]
 git = 'https://github.com/aptos-labs/aptos-core.git'

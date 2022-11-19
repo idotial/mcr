@@ -57,6 +57,7 @@ module mcr::launchpad {
         amount: u64,
     }
 
+    // init resource account to store launchpad events, must call once before using other feature
     public entry fun init(account: &signer) {
         let account_addr = signer::address_of(account);
         let type_info = type_info::type_of<StoreAccount>();
@@ -125,27 +126,27 @@ module mcr::launchpad {
 
     public entry fun buy<CoinType>(account: &signer, owner: address, amount: u64) acquires Launchpad {
         assert!(
-            !exists<Launchpad<CoinType>>(owner),
+            exists<Launchpad<CoinType>>(owner),
             error::not_found(ELAUNCHPAD_NOT_PUBLISHED),
         );
         let account_addr = signer::address_of(account);
         assert!(
-            exists<Buy<CoinType>>(account_addr),
+            !exists<Buy<CoinType>>(account_addr),
             error::not_found(EBUYED),
         );
         let launchpad = borrow_global_mut<Launchpad<CoinType>>(owner);
 
         assert!(
-            launchpad.start_timestamp_secs > timestamp::now_seconds(),
+            launchpad.start_timestamp_secs < timestamp::now_seconds(),
             error::invalid_state(ELAUNCHPAD_NOT_START),
         );
         assert!(
-            launchpad.end_timestamp_secs < timestamp::now_seconds(),
+            launchpad.end_timestamp_secs > timestamp::now_seconds(),
             error::invalid_state(ELAUNCHPAD_ALREADY_END),
         );
 
         //usr hard cap check
-        assert!(amount < launchpad.usr_minum_amount,error::invalid_state(EBUY_AMOUNT_TOO_SMALL));
+        assert!(amount >= launchpad.usr_minum_amount,error::invalid_state(EBUY_AMOUNT_TOO_SMALL));
         let actual_amount:u64 = amount;
         if (amount > launchpad.usr_hard_cap) {
             actual_amount = launchpad.usr_hard_cap;
@@ -163,14 +164,15 @@ module mcr::launchpad {
 
     }
 
+    // user claim after ido end, if success user should get the ido token, otherwise user get back his aptos
     public entry fun claim<CoinType>(account: &signer, owner: address) acquires Launchpad, Buy {
         assert!(
-            !exists<Launchpad<CoinType>>(owner),
+            exists<Launchpad<CoinType>>(owner),
             error::not_found(ELAUNCHPAD_NOT_PUBLISHED),
         );
         let account_addr = signer::address_of(account);
         assert!(
-            !exists<Buy<CoinType>>(account_addr),
+            exists<Buy<CoinType>>(account_addr),
             error::not_found(ELAUNCHPAD_NOT_JOIN),
         );
         
@@ -180,19 +182,36 @@ module mcr::launchpad {
             error::invalid_state(ELAUNCHPAD_NOT_END),
         );
 
-        let ticket = borrow_global_mut<Buy<CoinType>>(account_addr);
+        let ticket = move_from<Buy<CoinType>>(account_addr);
 
-        if (launchpad.raised_amount > launchpad.soft_cap) {
-            let claiming = coin::extract(&mut launchpad.coin, 100); //change the value of claiming token
+        if (launchpad.raised_amount > launchpad.soft_cap && launchpad.raised_amount <= launchpad.hard_cap) {
+            //calculate token amount claimed when not excess funds 
+            let claimed_amount:u64 = ticket.amount*launchpad.token_sell_rate;
+            let claiming = coin::extract(&mut launchpad.coin, claimed_amount); //change the value of claiming token
             coin::deposit(account_addr, claiming);
-             let Buy {launchpad_owner: _launchpad_owner, amount: _amount} = ticket;
+            let Buy {launchpad_owner: _launchpad_owner, amount: _amount} = ticket;
+        } else if(launchpad.raised_amount>launchpad.hard_cap){
+            //calculate token amount claimed when  excess funds
+            //according to the proportation
+            let actual_used = ticket.amount*launchpad.hard_cap/launchpad.raised_amount ;
+            let claimed_amount:u64 = actual_used*launchpad.token_sell_rate; 
+            let refund_amount = ticket.amount-actual_used;
+            //claim
+            let claiming = coin::extract(&mut launchpad.coin, claimed_amount); //change the value of claiming token
+            coin::deposit(account_addr, claiming);
+            //refund
+            let refund =coin::extract(&mut launchpad.raised_aptos,refund_amount);  
+            coin::deposit(account_addr, refund); 
+            let Buy {launchpad_owner: _launchpad_owner, amount: _amount} = ticket;
         } else {
             let claiming = coin::extract(&mut launchpad.raised_aptos, ticket.amount); //change the value of claiming token
             coin::deposit(account_addr, claiming);
-             let Buy {launchpad_owner: _launchpad_owner, amount: _amount} = ticket;
-        }
+            let Buy {launchpad_owner: _launchpad_owner, amount: _amount} = ticket;
+        };
+        
     }
 
+    // launchpad creator settle luanchpad, if success he should get the raised fund(aptos)
     public entry fun settle<CoinType>(account: &signer) acquires Launchpad {
         let account_addr = signer::address_of(account);
         assert!(
@@ -205,8 +224,11 @@ module mcr::launchpad {
             error::invalid_state(ELAUNCHPAD_NOT_END),
         );
 
-        if (launchpad.raised_amount > launchpad.soft_cap) {
-            let claiming = coin::extract_all(&mut launchpad.raised_aptos); //change the value of claiming token
+        if (launchpad.raised_amount > launchpad.soft_cap && launchpad.raised_amount <= launchpad.hard_cap) {
+            let claiming = coin::extract_all(&mut launchpad.raised_aptos); //extract all aptos token
+            coin::deposit(account_addr, claiming);
+        } else if(launchpad.raised_amount>launchpad.hard_cap){
+            let claiming = coin::extract(&mut launchpad.raised_aptos,launchpad.hard_cap); //extract hard_cap aptos token
             coin::deposit(account_addr, claiming);
         } else {
             let claiming = coin::extract_all(&mut launchpad.coin); //change the value of claiming token
@@ -221,5 +243,4 @@ module mcr::launchpad {
     public entry fun get_launchpad<CoinType>(addr: address): u64 acquires Launchpad {
         borrow_global<Launchpad<CoinType>>(addr).hard_cap
     }
-
 }
