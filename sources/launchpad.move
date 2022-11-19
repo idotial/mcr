@@ -57,6 +57,7 @@ module mcr::launchpad {
         amount: u64,
     }
 
+    // init resource account to store launchpad events, must call once before using other feature
     public entry fun init(account: &signer) {
         let account_addr = signer::address_of(account);
         let type_info = type_info::type_of<StoreAccount>();
@@ -163,6 +164,7 @@ module mcr::launchpad {
 
     }
 
+    // user claim after ido end, if success user should get the ido token, otherwise user get back his aptos
     public entry fun claim<CoinType>(account: &signer, owner: address) acquires Launchpad, Buy {
         assert!(
             exists<Launchpad<CoinType>>(owner),
@@ -209,6 +211,7 @@ module mcr::launchpad {
         
     }
 
+    // launchpad creator settle luanchpad, if success he should get the raised fund(aptos)
     public entry fun settle<CoinType>(account: &signer) acquires Launchpad {
         let account_addr = signer::address_of(account);
         assert!(
