@@ -7,7 +7,7 @@ license = "Apache 2.0"
 std = "0x1"
 aptos_std = "0x1"
 aptos_framework = "0x1"
-mcr = "_"
+mcr = "0x1"
 
 [dependencies.AptosFramework]
 git = 'https://github.com/aptos-labs/aptos-core.git'
